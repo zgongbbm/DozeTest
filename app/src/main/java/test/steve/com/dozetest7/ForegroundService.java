@@ -2,6 +2,7 @@ package test.steve.com.dozetest7;
 
 import android.app.Notification;
 import android.app.PendingIntent;
+import android.app.Service;
 import android.app.job.JobParameters;
 import android.app.job.JobService;
 import android.content.BroadcastReceiver;
@@ -9,15 +10,20 @@ import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.os.Binder;
+import android.os.IBinder;
+import android.support.annotation.Nullable;
 import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 import android.widget.RemoteViews;
 import android.widget.Toast;
 
-public class ForegroundService extends JobService {
+public class ForegroundService extends Service {
   private static final String LOG_TAG = "ForegroundService";
 
   public static boolean serviceRunning = false;
+
+  private final IBinder mBinder = new LocalBinder();
 
   @Override public void onCreate() {
     super.onCreate();
@@ -29,59 +35,7 @@ public class ForegroundService extends JobService {
       Toast.makeText(this, "Start Service", Toast.LENGTH_SHORT).show();
       Log.i(LOG_TAG, "Received Start Foreground Intent ");
 
-      Intent notificationIntent = new Intent(this, MainActivity.class);
-      notificationIntent.setAction(Constants.ACTION.MAIN_ACTION);
-      notificationIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-      PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, 0);
-
-      RemoteViews notificationView = new RemoteViews(this.getPackageName(), R.layout.notification);
-
-      // And now, building and attaching the Play button.
-      Intent buttonPlayIntent = new Intent(this, NotificationPlayButtonHandler.class);
-      buttonPlayIntent.putExtra("action", "togglePause");
-
-      PendingIntent buttonPlayPendingIntent =
-          pendingIntent.getBroadcast(this, 0, buttonPlayIntent, 0);
-      notificationView.setOnClickPendingIntent(R.id.notification_button_play,
-          buttonPlayPendingIntent);
-
-      // And now, building and attaching the Skip button.
-      Intent buttonSkipIntent = new Intent(this, NotificationSkipButtonHandler.class);
-      buttonSkipIntent.putExtra("action", "skip");
-
-      PendingIntent buttonSkipPendingIntent =
-          pendingIntent.getBroadcast(this, 0, buttonSkipIntent, 0);
-      notificationView.setOnClickPendingIntent(R.id.notification_button_skip,
-          buttonSkipPendingIntent);
-
-      // And now, building and attaching the Skip button.
-      Intent buttonPrevIntent = new Intent(this, NotificationPrevButtonHandler.class);
-      buttonPrevIntent.putExtra("action", "prev");
-
-      PendingIntent buttonPrevPendingIntent =
-          pendingIntent.getBroadcast(this, 0, buttonPrevIntent, 0);
-      notificationView.setOnClickPendingIntent(R.id.notification_button_prev,
-          buttonPrevPendingIntent);
-
-      // And now, building and attaching the Close button.
-      Intent buttonCloseIntent = new Intent(this, NotificationCloseButtonHandler.class);
-      buttonCloseIntent.putExtra("action", "close");
-
-      PendingIntent buttonClosePendingIntent =
-          pendingIntent.getBroadcast(this, 0, buttonCloseIntent, 0);
-      notificationView.setOnClickPendingIntent(R.id.notification_button_close,
-          buttonClosePendingIntent);
-
-      Notification notification =
-          new NotificationCompat.Builder(this).setContentTitle("nkDroid Music Player")
-              .setTicker("nkDroid Music Player")
-              .setContentText("nkDroid Music")
-              .setSmallIcon(R.mipmap.ic_launcher)
-              .setContent(notificationView)
-              .setOngoing(true)
-              .build();
-
-      startForeground(Constants.NOTIFICATION_ID.FOREGROUND_SERVICE, notification);
+      startForeground(Constants.NOTIFICATION_ID.FOREGROUND_SERVICE, buildNotification());
 
       testNetwork();
     } else if (intent.getAction().equals(Constants.ACTION.STOPFOREGROUND_ACTION)) {
@@ -94,17 +48,32 @@ public class ForegroundService extends JobService {
     return START_STICKY;
   }
 
+  private Notification buildNotification() {
+    // build notification
+    Intent intent = new Intent(this, MainActivity.class);
+    PendingIntent pendingIntent = PendingIntent.getActivity(
+        this,
+        0,
+        intent,
+        PendingIntent.FLAG_NO_CREATE
+    );
+
+    NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(this)
+        .setContentTitle("HelloApp")
+        .setContentText("The Service is running foreground")
+        .setSmallIcon(R.drawable.ic_service_notif)
+        .setContentIntent(pendingIntent);
+
+    return mBuilder.build();
+  }
+
   @Override public void onDestroy() {
     super.onDestroy();
     Log.i(LOG_TAG, "In onDestroy");
   }
 
-  @Override public boolean onStartJob(JobParameters params) {
-    return false;
-  }
-
-  @Override public boolean onStopJob(JobParameters params) {
-    return false;
+  @Nullable @Override public IBinder onBind(Intent intent) {
+    return mBinder;
   }
 
   private void testNetwork() {
@@ -131,39 +100,10 @@ public class ForegroundService extends JobService {
     }
   }
 
-  /**
-   * Called when user clicks the "play/pause" button on the on-going system Notification.
-   */
-  public static class NotificationPlayButtonHandler extends BroadcastReceiver {
-    @Override public void onReceive(Context context, Intent intent) {
-      Toast.makeText(context, "Play Clicked", Toast.LENGTH_SHORT).show();
+  public class LocalBinder extends Binder {
+    public ForegroundService getService() {
+      return ForegroundService.this;
     }
   }
 
-  /**
-   * Called when user clicks the "skip" button on the on-going system Notification.
-   */
-  public static class NotificationSkipButtonHandler extends BroadcastReceiver {
-    @Override public void onReceive(Context context, Intent intent) {
-      Toast.makeText(context, "Next Clicked", Toast.LENGTH_SHORT).show();
-    }
-  }
-
-  /**
-   * Called when user clicks the "previous" button on the on-going system Notification.
-   */
-  public static class NotificationPrevButtonHandler extends BroadcastReceiver {
-    @Override public void onReceive(Context context, Intent intent) {
-      Toast.makeText(context, "Previous Clicked", Toast.LENGTH_SHORT).show();
-    }
-  }
-
-  /**
-   * Called when user clicks the "close" button on the on-going system Notification.
-   */
-  public static class NotificationCloseButtonHandler extends BroadcastReceiver {
-    @Override public void onReceive(Context context, Intent intent) {
-      Toast.makeText(context, "Close Clicked", Toast.LENGTH_SHORT).show();
-    }
-  }
 }

@@ -1,10 +1,7 @@
 package test.steve.com.dozetest7;
 
 import android.app.Activity;
-import android.app.job.JobInfo;
-import android.app.job.JobScheduler;
 import android.content.BroadcastReceiver;
-import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
@@ -14,11 +11,11 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.PowerManager;
 import android.util.Log;
-import android.widget.TextView;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import test.steve.com.dozetest7.command.ShellTest;
 
 public class MainActivity extends Activity {
 
@@ -41,11 +38,6 @@ public class MainActivity extends Activity {
     powerManager = (PowerManager) this.getSystemService(Context.POWER_SERVICE);
     mHandler = new Handler(getMainLooper());
 
-    //ComponentName myService = new ComponentName(this, ForegroundService.class);
-    //JobInfo myJob = new JobInfo.Builder(1, myService).setRequiresDeviceIdle(true).build();
-    //JobScheduler jobScheduler = (JobScheduler) getSystemService(Context.JOB_SCHEDULER_SERVICE);
-    //jobScheduler.schedule(myJob);
-
     new Thread(new Runnable() {
       @Override public void run() {
         while (true) {
@@ -61,7 +53,7 @@ public class MainActivity extends Activity {
           if (powerManager.isDeviceIdleMode()) {
             if (!ForegroundService.serviceRunning) {
               try {
-                Thread.sleep(2 * 60 * 1000);
+                Thread.sleep(4 * 1000);
               } catch (InterruptedException e) {
                 e.printStackTrace();
               }
@@ -70,30 +62,13 @@ public class MainActivity extends Activity {
               startService(startIntent);
             }
           } else {
-            Intent stopIntent = new Intent(MainActivity.this, ForegroundService.class);
-            stopIntent.setAction(Constants.ACTION.STOPFOREGROUND_ACTION);
-            startService(stopIntent);
+            //Intent stopIntent = new Intent(MainActivity.this, ForegroundService.class);
+            //stopIntent.setAction(Constants.ACTION.STOPFOREGROUND_ACTION);
+            //startService(stopIntent);
           }
         }
       }
     }).start();
-
-    // Test network in Doze Mode
-    //new Thread(new Runnable() {
-    //  @RequiresApi(api = Build.VERSION_CODES.M) @Override public void run() {
-    //    while (true) {
-    //      boolean isConnected = isURLReachable(MainActivity.this, "https://www.amazon.ca/");
-    //
-    //      Log.d(Constants.TAG, "isConnected: " + isConnected + ", time: " + System.currentTimeMillis());
-    //
-    //      try {
-    //        Thread.sleep(1000);
-    //      } catch (InterruptedException e) {
-    //        e.printStackTrace();
-    //      }
-    //    }
-    //  }
-    //}).start();
   }
 
   static public boolean isURLReachable(Context context, String urlstring) {

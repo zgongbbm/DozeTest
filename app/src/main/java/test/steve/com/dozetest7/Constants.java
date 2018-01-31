@@ -3,6 +3,7 @@ package test.steve.com.dozetest7;
 public class Constants {
 
     public static final String TAG = "MyLogTag";
+    public static final String SHELL_TAG = "ShellTestTag";
 
     public interface ACTION {
         public static String MAIN_ACTION = "com.nkdroid.alertdialog.action.main";
