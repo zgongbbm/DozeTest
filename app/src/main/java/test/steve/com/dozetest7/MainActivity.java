@@ -11,17 +11,20 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.PowerManager;
 import android.util.Log;
+import com.firebase.jobdispatcher.FirebaseJobDispatcher;
+import com.firebase.jobdispatcher.GooglePlayDriver;
+import com.firebase.jobdispatcher.Job;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
-import test.steve.com.dozetest7.command.ShellTest;
+import test.steve.com.dozetest7.service.MyJobService;
 
 public class MainActivity extends Activity {
 
   private PowerManager powerManager;
 
-  private Handler mHandler;
+  private FirebaseJobDispatcher jobDispatcher;
 
   @Override protected void onStart() {
     super.onStart();
@@ -35,40 +38,23 @@ public class MainActivity extends Activity {
   @Override protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
     setContentView(R.layout.activity_main);
-    powerManager = (PowerManager) this.getSystemService(Context.POWER_SERVICE);
-    mHandler = new Handler(getMainLooper());
 
-    new Thread(new Runnable() {
-      @Override public void run() {
-        while (true) {
-          try {
-            Thread.sleep(1000);
-          } catch (InterruptedException e) {
-            e.printStackTrace();
-          }
-          Log.d(Constants.TAG, "isDeviceIdleMode: "
-              + powerManager.isDeviceIdleMode()
-              + ", time: "
-              + System.currentTimeMillis());
-          if (powerManager.isDeviceIdleMode()) {
-            if (!ForegroundService.serviceRunning) {
-              try {
-                Thread.sleep(4 * 1000);
-              } catch (InterruptedException e) {
-                e.printStackTrace();
-              }
-              Intent startIntent = new Intent(MainActivity.this, ForegroundService.class);
-              startIntent.setAction(Constants.ACTION.STARTFOREGROUND_ACTION);
-              startService(startIntent);
-            }
-          } else {
-            //Intent stopIntent = new Intent(MainActivity.this, ForegroundService.class);
-            //stopIntent.setAction(Constants.ACTION.STOPFOREGROUND_ACTION);
-            //startService(stopIntent);
-          }
-        }
-      }
-    }).start();
+    // Create a new dispatcher using the Google Play driver.
+    jobDispatcher = new FirebaseJobDispatcher(new GooglePlayDriver(MainActivity.this));
+
+    powerManager = (PowerManager) this.getSystemService(Context.POWER_SERVICE);
+
+    // Test JobScheduler.
+    scheduleJob();
+  }
+
+  private void scheduleJob(){
+    Job myJob = jobDispatcher.newJobBuilder()
+        .setService(MyJobService.class) // the JobService that will be called
+        .setTag("my-unique-tag")        // uniquely identifies the job
+        .build();
+
+    jobDispatcher.mustSchedule(myJob);
   }
 
   static public boolean isURLReachable(Context context, String urlstring) {
